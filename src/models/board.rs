@@ -1,6 +1,7 @@
 use crate::models::cell::Cell;
 use crate::models::player::Player;
 use crate::models::row::Row;
+use crate::utils::ai;
 
 #[derive(Debug)]
 pub struct Board {
@@ -17,102 +18,58 @@ impl Board {
     pub fn get_rows(&self) -> Vec<Vec<&Cell>> {
         self.rows
             .iter()
-            .map(|row| row.cols.iter().collect())
+            .map(|row| row.cells.iter().collect())
             .collect()
     }
 
     pub fn get_cols(&self) -> Vec<Vec<&Cell>> {
         self.rows[0]
-            .cols
+            .cells
             .iter()
             .enumerate()
-            .map(|(i, _)| self.rows.iter().map(|row| &row.cols[i]).collect())
+            .map(|(i, _)| self.rows.iter().map(|row| &row.cells[i]).collect())
             .collect()
     }
 
     pub fn get_crosses(&self) -> Vec<Vec<&Cell>> {
         vec![
             vec![
-                &self.rows[0].cols[0],
-                &self.rows[1].cols[1],
-                &self.rows[2].cols[2],
+                &self.rows[0].cells[0],
+                &self.rows[1].cells[1],
+                &self.rows[2].cells[2],
             ],
             vec![
-                &self.rows[0].cols[2],
-                &self.rows[1].cols[1],
-                &self.rows[2].cols[0],
+                &self.rows[0].cells[2],
+                &self.rows[1].cells[1],
+                &self.rows[2].cells[0],
             ],
         ]
     }
 
+    pub fn get_cells(&self) -> Vec<&Cell> {
+        self.get_rows()
+            .iter()
+            .flat_map(|cells| cells.to_vec())
+            .collect()
+    }
+
     pub fn get_cell_at(&self, row_index: usize, col_index: usize) -> &Cell {
-        &self.rows[row_index].cols[col_index]
+        &self.rows[row_index].cells[col_index]
     }
 
     pub fn set_cell_at(&mut self, row_index: usize, col_index: usize, cell: Cell) {
-        self.rows[row_index].cols[col_index] = cell;
+        self.rows[row_index].cells[col_index] = cell;
     }
 
-    pub fn is_full(&self) -> bool {
-        self.rows.iter().all(|row| {
-            row.cols.iter().all(|cell| match cell {
-                Cell::Marker(_) => true,
-                Cell::Empty => false,
-            })
-        })
+    pub fn board_full(&self) -> bool {
+        ai::board_full(self)
     }
 
     pub fn winner(&self) -> Option<Player> {
-        let all_x = |cells: &Vec<&Cell>| -> bool {
-            cells.iter().all(|cell| match cell {
-                Cell::Marker(Player::X) => true,
-                _ => false,
-            })
-        };
-
-        let all_o = |cells: &Vec<&Cell>| -> bool {
-            cells.iter().all(|cell| match cell {
-                Cell::Marker(Player::O) => true,
-                _ => false,
-            })
-        };
-
-        let all_same_player = |cells: &Vec<&Cell>| -> Option<Player> {
-            if all_x(cells) {
-                Some(Player::X)
-            } else if all_o(cells) {
-                Some(Player::O)
-            } else {
-                None
-            }
-        };
-
-        if let Some(player) = self
-            .get_rows()
-            .iter()
-            .find_map(|cells| all_same_player(cells))
-        {
-            return Some(player);
-        };
-
-        if let Some(player) = self.get_cols().iter().find_map(all_same_player) {
-            return Some(player);
-        };
-
-        if let Some(player) = self.get_crosses().iter().find_map(all_same_player) {
-            return Some(player);
-        };
-
-        None
+        ai::winning_player_on(self)
     }
 
     pub fn is_complete(&self) -> bool {
-        if self.is_full() {
-            true
-        } else if let Some(_) = self.winner() {
-            true
-        } else {
-            false
-        }
+        ai::game_over(self)
     }
 }

@@ -25,17 +25,28 @@ pub fn render_board(board: &Board) {
             println!("   |---+---+---|");
         }
 
-        let markers: Vec<&str> = row.cols.iter().map(|cell| cell.character()).collect();
+        let markers: Vec<&str> = row.cells.iter().map(|cell| cell.character()).collect();
+        let row_letter = match index {
+            0 => 'A',
+            1 => 'B',
+            2 => 'C',
+            _ => '?', // should never happen
+        };
 
         println!(
             " {} | {} | {} | {} |",
-            index + 1,
-            markers[0],
-            markers[1],
-            markers[2]
+            row_letter, markers[0], markers[1], markers[2]
         );
     }
 
     println!("   '---'---'---'");
-    println!("     1   2   3  ");
+    println!("     1   2   3");
+}
+
+pub fn render_winning_player(player: &Player) {
+    println!("Player {} won!", player.character());
+}
+
+pub fn render_stalemate() {
+    println!("STALEMATE!");
 }
