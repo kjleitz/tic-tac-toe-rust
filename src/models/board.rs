@@ -15,42 +15,116 @@ impl Board {
         }
     }
 
-    pub fn get_rows(&self) -> Vec<Vec<&Cell>> {
+    pub fn from(board: &Board) -> Self {
+        Self {
+            rows: board.rows.clone(),
+        }
+    }
+
+    pub fn cell_positions_to_cells<'a>(
+        cell_positions: &Vec<(&'a Cell, usize, usize)>,
+    ) -> Vec<&'a Cell> {
+        cell_positions
+            .iter()
+            .map(|(cell, _row_index, _col_index)| cell.clone())
+            .collect()
+    }
+
+    pub fn get_cell_positions(&self) -> Vec<(&Cell, usize, usize)> {
         self.rows
             .iter()
-            .map(|row| row.cells.iter().collect())
-            .collect()
-    }
-
-    pub fn get_cols(&self) -> Vec<Vec<&Cell>> {
-        self.rows[0]
-            .cells
-            .iter()
             .enumerate()
-            .map(|(i, _)| self.rows.iter().map(|row| &row.cells[i]).collect())
+            .flat_map(|(row_index, row)| {
+                row.cells
+                    .iter()
+                    .enumerate()
+                    .map(|(col_index, cell)| (cell, row_index, col_index))
+                    .collect::<Vec<(&Cell, usize, usize)>>()
+            })
             .collect()
     }
 
-    pub fn get_crosses(&self) -> Vec<Vec<&Cell>> {
+    pub fn get_cells(&self) -> Vec<&Cell> {
+        Board::cell_positions_to_cells(&self.get_cell_positions())
+    }
+
+    pub fn get_cell_position_rows(&self) -> Vec<Vec<(&Cell, usize, usize)>> {
+        self.get_cell_positions().iter().fold(
+            vec![vec![(&Cell::Empty, 0, 0); 3]; 3],
+            |mut rows, (cell, row_index, col_index)| {
+                rows[*row_index][*col_index] = (cell, *row_index, *col_index);
+                rows
+            },
+        )
+    }
+
+    pub fn get_cell_position_cols(&self) -> Vec<Vec<(&Cell, usize, usize)>> {
+        self.get_cell_positions().iter().fold(
+            vec![vec![(&Cell::Empty, 0, 0); 3]; 3],
+            |mut cols, (cell, row_index, col_index)| {
+                cols[*col_index][*row_index] = (cell, *row_index, *col_index);
+                cols
+            },
+        )
+    }
+
+    pub fn get_cell_position_crosses(&self) -> Vec<Vec<(&Cell, usize, usize)>> {
         vec![
             vec![
-                &self.rows[0].cells[0],
-                &self.rows[1].cells[1],
-                &self.rows[2].cells[2],
+                (&self.rows[0].cells[0], 0, 0),
+                (&self.rows[1].cells[1], 1, 1),
+                (&self.rows[2].cells[2], 2, 2),
             ],
             vec![
-                &self.rows[0].cells[2],
-                &self.rows[1].cells[1],
-                &self.rows[2].cells[0],
+                (&self.rows[0].cells[2], 0, 2),
+                (&self.rows[1].cells[1], 1, 1),
+                (&self.rows[2].cells[0], 2, 0),
             ],
         ]
     }
 
-    pub fn get_cells(&self) -> Vec<&Cell> {
-        self.get_rows()
-            .iter()
-            .flat_map(|cells| cells.to_vec())
-            .collect()
+    pub fn get_center_cell_position(&self) -> (&Cell, usize, usize) {
+        (&self.rows[1].cells[1], 1, 1)
+    }
+
+    pub fn get_corner_cell_positions(&self) -> Vec<(&Cell, usize, usize)> {
+        let rows = self.get_cell_position_rows();
+        let first_row = rows.first().unwrap();
+        let last_row = rows.last().unwrap();
+        vec![
+            first_row.first().unwrap().clone(),
+            first_row.last().unwrap().clone(),
+            last_row.first().unwrap().clone(),
+            last_row.last().unwrap().clone(),
+        ]
+    }
+
+    pub fn get_corner_cell_position_opposite(
+        &self,
+        cell_position: (&Cell, usize, usize),
+    ) -> (&Cell, usize, usize) {
+        let rows = self.get_cell_position_rows();
+
+        let opposite_row = if cell_position.1 == 0 {
+            rows.last().unwrap()
+        } else {
+            rows.first().unwrap()
+        };
+
+        if cell_position.2 == 0 {
+            opposite_row.last().unwrap().clone()
+        } else {
+            opposite_row.first().unwrap().clone()
+        }
+    }
+
+    pub fn get_side_cell_positions(&self) -> Vec<(&Cell, usize, usize)> {
+        vec![
+            (&self.rows[0].cells[1], 0, 1),
+            (&self.rows[1].cells[0], 1, 0),
+            (&self.rows[1].cells[2], 1, 2),
+            (&self.rows[2].cells[1], 2, 1),
+        ]
     }
 
     pub fn get_cell_at(&self, row_index: usize, col_index: usize) -> &Cell {

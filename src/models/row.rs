@@ -1,6 +1,6 @@
 use crate::models::cell::Cell;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Row {
     pub cells: [Cell; 3],
 }

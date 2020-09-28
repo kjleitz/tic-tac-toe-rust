@@ -1,6 +1,6 @@
 use crate::models::player::Player;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Cell {
     Marker(Player),
     Empty,

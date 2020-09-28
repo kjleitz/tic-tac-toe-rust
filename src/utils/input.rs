@@ -45,10 +45,6 @@ pub fn ask_for_number_where(
 }
 
 pub fn ask_for_character(prompt: &str) -> Result<char, io::Error> {
-    // ask_for_string(prompt).and_then(|input| match input.chars().next() {
-    //     Some(character) => Ok(character),
-    //     None => Err(invalid_input("Not a character")),
-    // })
     ask_for_string(prompt)
         .and_then(|input| input.chars().next().ok_or(invalid_input("Not a character")))
 }

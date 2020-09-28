@@ -11,4 +11,11 @@ impl Player {
             Player::O => "O",
         }
     }
+
+    pub fn opponent(&self) -> Player {
+        match self {
+            Player::X => Player::O,
+            Player::O => Player::X,
+        }
+    }
 }
