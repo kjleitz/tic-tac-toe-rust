@@ -3,15 +3,17 @@ use crate::models::cell::Cell;
 use crate::models::player::Player;
 use crate::utils::ai::best_next_move;
 use crate::utils::ai::current_player;
+use crate::utils::ai::game_over;
+use crate::utils::ai::winning_player_on;
 use crate::utils::graphics::clear_screen;
 use crate::utils::graphics::render_board;
 use crate::utils::graphics::render_current_player;
 use crate::utils::graphics::render_empty_lines;
 use crate::utils::graphics::render_stalemate;
 use crate::utils::graphics::render_winning_player;
-use crate::utils::input::ask_for_alpha_num;
-use crate::utils::input::ask_for_bool;
-use crate::utils::input::ask_for_character;
+use crate::utils::input::ask_for_cell_position;
+use crate::utils::input::ask_for_player_character;
+use crate::utils::input::confirm;
 
 pub fn init() {
     let mut board = Board::new();
@@ -50,8 +52,8 @@ pub fn next_turn(
     render_board(&board);
     render_empty_lines(1);
 
-    if board.is_complete() {
-        match board.winner() {
+    if game_over(board) {
+        match winning_player_on(board) {
             Some(winner) => render_winning_player(&winner),
             None => render_stalemate(),
         }
@@ -64,63 +66,12 @@ pub fn next_turn(
     } else {
         if against_computer && &player != player_character {
             let (_, row_index, col_index) = best_next_move(board, &player).unwrap();
-            board.set_cell_at(row_index, col_index, Cell::Marker(player.clone()));
+            board.set_cell_at(row_index, col_index, Cell::Marker(player));
         } else {
             take_turn(board, &player);
         }
 
         next_turn(board, player_character, first_player, against_computer);
-    }
-}
-
-pub fn ask_for_cell_position(prompt: &str) -> (usize, usize) {
-    if let Ok((alpha, num)) = ask_for_alpha_num(prompt) {
-        if num == 0 || num > 3 {
-            println!("{} is not a column. Try again!", num);
-            return ask_for_cell_position(prompt);
-        }
-
-        let col_index = num - 1;
-
-        let row_index = match alpha.as_str() {
-            "A" | "a" => 0,
-            "B" | "b" => 1,
-            "C" | "c" => 2,
-            _ => 99,
-        };
-
-        if row_index == 99 {
-            println!("{} is not a row. Try again!", alpha);
-            return ask_for_cell_position(prompt);
-        }
-
-        (row_index, col_index)
-    } else {
-        println!("That's not a valid position! Try again.");
-        ask_for_cell_position(prompt)
-    }
-}
-
-pub fn ask_for_player_character(prompt: &str) -> Player {
-    match ask_for_character(prompt) {
-        Ok('X') | Ok('x') => Player::X,
-        Ok('O') | Ok('o') => Player::O,
-        _ => {
-            println!("That's not a valid choice! Try again.");
-            ask_for_player_character(prompt)
-        }
-    }
-}
-
-pub fn confirm(prompt: &str, default: bool) -> bool {
-    let choices = if default { "Y/n" } else { "y/N" };
-    let prompt_with_yes_no = format!("{} ({})", prompt.trim(), choices);
-    match ask_for_bool(prompt_with_yes_no.as_str(), true) {
-        Ok(answer) => answer,
-        _ => {
-            println!("Valid choices are, like, 'yes' and 'no'. Get it? All right, try again.");
-            confirm(prompt, default)
-        }
     }
 }
 

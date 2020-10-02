@@ -1,7 +1,5 @@
 use crate::models::cell::Cell;
-use crate::models::player::Player;
 use crate::models::row::Row;
-use crate::utils::ai;
 
 #[derive(Debug)]
 pub struct Board {
@@ -22,11 +20,11 @@ impl Board {
     }
 
     pub fn cell_positions_to_cells<'a>(
-        cell_positions: &Vec<(&'a Cell, usize, usize)>,
+        cell_positions: &[(&'a Cell, usize, usize)],
     ) -> Vec<&'a Cell> {
         cell_positions
             .iter()
-            .map(|(cell, _row_index, _col_index)| cell.clone())
+            .map(|(cell, _row_index, _col_index)| *cell)
             .collect()
     }
 
@@ -92,10 +90,10 @@ impl Board {
         let first_row = rows.first().unwrap();
         let last_row = rows.last().unwrap();
         vec![
-            first_row.first().unwrap().clone(),
-            first_row.last().unwrap().clone(),
-            last_row.first().unwrap().clone(),
-            last_row.last().unwrap().clone(),
+            *first_row.first().unwrap(),
+            *first_row.last().unwrap(),
+            *last_row.first().unwrap(),
+            *last_row.last().unwrap(),
         ]
     }
 
@@ -112,9 +110,9 @@ impl Board {
         };
 
         if cell_position.2 == 0 {
-            opposite_row.last().unwrap().clone()
+            *opposite_row.last().unwrap()
         } else {
-            opposite_row.first().unwrap().clone()
+            *opposite_row.first().unwrap()
         }
     }
 
@@ -133,17 +131,5 @@ impl Board {
 
     pub fn set_cell_at(&mut self, row_index: usize, col_index: usize, cell: Cell) {
         self.rows[row_index].cells[col_index] = cell;
-    }
-
-    pub fn board_full(&self) -> bool {
-        ai::board_full(self)
-    }
-
-    pub fn winner(&self) -> Option<Player> {
-        ai::winning_player_on(self)
-    }
-
-    pub fn is_complete(&self) -> bool {
-        ai::game_over(self)
     }
 }

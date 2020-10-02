@@ -2,14 +2,14 @@ use crate::models::board::Board;
 use crate::models::cell::Cell;
 use crate::models::player::Player;
 
-pub fn all_are_player(cells: &Vec<&Cell>, player: &Player) -> bool {
+pub fn all_are_player(cells: &[&Cell], player: &Player) -> bool {
     cells.iter().all(|cell| match cell {
         Cell::Marker(p) => p == player,
         Cell::Empty => false,
     })
 }
 
-pub fn same_player_in(cells: &Vec<&Cell>) -> Option<Player> {
+pub fn same_player_in(cells: &[&Cell]) -> Option<Player> {
     if all_are_player(cells, &Player::X) {
         Some(Player::X)
     } else if all_are_player(cells, &Player::O) {
@@ -44,6 +44,7 @@ pub fn board_full(board: &Board) -> bool {
     })
 }
 
+#[allow(dead_code)]
 pub fn board_empty(board: &Board) -> bool {
     board.get_cells().iter().all(|cell| match cell {
         Cell::Marker(_) => false,
@@ -52,11 +53,7 @@ pub fn board_empty(board: &Board) -> bool {
 }
 
 pub fn game_over(board: &Board) -> bool {
-    board_full(board)
-        || match winning_player_on(board) {
-            Some(_) => true,
-            None => false,
-        }
+    board_full(board) || winning_player_on(board).is_some()
 }
 
 pub fn current_player(board: &Board, starting_player: &Player) -> Player {
@@ -200,7 +197,7 @@ pub fn potential_opposite_corner_moves(
             let opponent = for_player.opponent();
             match cell {
                 Cell::Marker(resident) if resident == &opponent => {
-                    Some((cell.clone(), *row_index, *col_index))
+                    Some((*cell, *row_index, *col_index))
                 }
                 _ => None,
             }
@@ -250,11 +247,11 @@ pub fn potential_empty_moves(board: &Board) -> Vec<(Cell, usize, usize)> {
         .collect()
 }
 
-pub fn first_cell_position_in(cells: &Vec<(Cell, usize, usize)>) -> Option<(Cell, usize, usize)> {
+pub fn first_cell_position_in(cells: &[(Cell, usize, usize)]) -> Option<(Cell, usize, usize)> {
     cells
         .iter()
         .next()
-        .and_then(|(cell, row_index, col_index)| Some((cell.clone(), *row_index, *col_index)))
+        .map(|(cell, row_index, col_index)| (cell.clone(), *row_index, *col_index))
 }
 
 pub fn potential_win_setup_move(
@@ -302,15 +299,15 @@ pub fn potential_empty_move(board: &Board) -> Option<(Cell, usize, usize)> {
 }
 
 pub fn best_next_move(board: &Board, for_player: &Player) -> Option<(Cell, usize, usize)> {
-    None.or(potential_win_move(board, for_player))
-        .or(potential_win_move(board, &for_player.opponent()))
-        .or(best_potential_fork_move(board, for_player))
-        .or(best_potential_fork_move(board, &for_player.opponent()))
-        .or(potential_win_setup_move(board, for_player))
-        .or(potential_win_setup_move(board, &for_player.opponent()))
-        .or(potential_center_move(board))
-        .or(potential_opposite_corner_move(board, for_player))
-        .or(potential_empty_corner_move(board))
-        .or(potential_empty_side_move(board))
-        .or(potential_empty_move(board))
+    None.or_else(|| potential_win_move(board, for_player))
+        .or_else(|| potential_win_move(board, &for_player.opponent()))
+        .or_else(|| best_potential_fork_move(board, for_player))
+        .or_else(|| best_potential_fork_move(board, &for_player.opponent()))
+        .or_else(|| potential_win_setup_move(board, for_player))
+        .or_else(|| potential_win_setup_move(board, &for_player.opponent()))
+        .or_else(|| potential_center_move(board))
+        .or_else(|| potential_opposite_corner_move(board, for_player))
+        .or_else(|| potential_empty_corner_move(board))
+        .or_else(|| potential_empty_side_move(board))
+        .or_else(|| potential_empty_move(board))
 }

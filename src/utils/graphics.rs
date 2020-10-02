@@ -9,7 +9,7 @@ pub fn clear_screen() {
 
 pub fn render_empty_lines(count: usize) {
     for _ in 0..count {
-        println!("");
+        println!();
     }
 }
 
