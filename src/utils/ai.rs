@@ -131,40 +131,45 @@ pub fn potential_win_arrangements<'a>(
     potential_arrangements(board, for_player, 2)
 }
 
-pub fn potential_win_setup_moves(board: &Board, for_player: &Player) -> Vec<(Cell, usize, usize)> {
+pub fn potential_win_setup_moves<'a>(
+    board: &'a Board,
+    for_player: &Player,
+) -> Vec<(&'a Cell, usize, usize)> {
     potential_win_setup_arrangements(board, for_player)
         .iter()
         .flat_map(|cell_positions| {
             cell_positions
                 .iter()
                 .filter_map(|cell_position| match cell_position {
-                    (Cell::Empty, row_index, col_index) => {
-                        Some((Cell::Empty, *row_index, *col_index))
+                    (cell @ Cell::Empty, row_index, col_index) => {
+                        Some((*cell, *row_index, *col_index))
                     }
                     _ => None,
                 })
-                .collect::<Vec<(Cell, usize, usize)>>()
+                .collect::<Vec<(&Cell, usize, usize)>>()
         })
         .collect()
 }
 
-pub fn potential_win_moves(board: &Board, for_player: &Player) -> Vec<(Cell, usize, usize)> {
+pub fn potential_win_moves<'a>(
+    board: &'a Board,
+    for_player: &Player,
+) -> Vec<(&'a Cell, usize, usize)> {
     potential_win_arrangements(board, for_player)
         .iter()
         .filter_map(|cell_positions| {
             cell_positions
                 .iter()
-                .find_map(|cell_position| match cell_position {
-                    (Cell::Empty, row_index, col_index) => {
-                        Some((Cell::Empty, *row_index, *col_index))
-                    }
-                    _ => None,
-                })
+                .find(|(cell, _, _)| **cell == Cell::Empty)
+                .copied()
         })
         .collect()
 }
 
-pub fn potential_fork_moves(board: &Board, for_player: &Player) -> Vec<(Cell, usize, usize)> {
+pub fn potential_fork_moves<'a>(
+    board: &'a Board,
+    for_player: &Player,
+) -> Vec<(&'a Cell, usize, usize)> {
     let mut potential_forks_scored = potential_win_setup_moves(board, for_player)
         .iter()
         .filter_map(|(cell, row_index, col_index)| {
@@ -172,133 +177,133 @@ pub fn potential_fork_moves(board: &Board, for_player: &Player) -> Vec<(Cell, us
             imagined_board.set_cell_at(*row_index, *col_index, Cell::Marker(for_player.clone()));
             let score = potential_win_moves(&imagined_board, for_player).len();
             if score > 1 {
-                Some((cell.clone(), *row_index, *col_index, score))
+                Some((*cell, *row_index, *col_index, score))
             } else {
                 None
             }
         })
-        .collect::<Vec<(Cell, usize, usize, usize)>>();
+        .collect::<Vec<(&Cell, usize, usize, usize)>>();
 
     potential_forks_scored.sort_by(|a, b| (b.3).cmp(&a.3));
     potential_forks_scored
         .iter()
-        .map(|(cell, row_index, col_index, _)| (cell.clone(), *row_index, *col_index))
+        .map(|&(cell, row_index, col_index, _)| (cell, row_index, col_index))
         .collect()
 }
 
-pub fn potential_opposite_corner_moves(
-    board: &Board,
+pub fn potential_opposite_corner_moves<'a>(
+    board: &'a Board,
     for_player: &Player,
-) -> Vec<(Cell, usize, usize)> {
+) -> Vec<(&'a Cell, usize, usize)> {
     board
         .get_corner_cell_positions()
         .iter()
-        .filter_map(|(cell, row_index, col_index)| {
+        .filter(|(cell, _, _)| {
             let opponent = for_player.opponent();
-            match cell {
-                Cell::Marker(resident) if resident == &opponent => {
-                    Some((*cell, *row_index, *col_index))
-                }
-                _ => None,
+            if let Cell::Marker(resident) = cell {
+                resident == &opponent
+            } else {
+                false
             }
         })
-        .filter_map(|cell_position| {
+        .filter_map(|&cell_position| {
             let (cell, row_index, col_index) =
                 board.get_corner_cell_position_opposite(cell_position);
 
             match cell {
-                Cell::Empty => Some((cell.clone(), row_index, col_index)),
+                Cell::Empty => Some((cell, row_index, col_index)),
                 _ => None,
             }
         })
         .collect()
 }
 
-pub fn potential_empty_corner_moves(board: &Board) -> Vec<(Cell, usize, usize)> {
+pub fn potential_empty_corner_moves(board: &Board) -> Vec<(&Cell, usize, usize)> {
     board
         .get_corner_cell_positions()
         .iter()
-        .filter_map(|(cell, row_index, col_index)| match cell {
-            Cell::Empty => Some((Cell::Empty, *row_index, *col_index)),
-            _ => None,
-        })
+        .filter(|(cell, _, _)| **cell == Cell::Empty)
+        .copied()
         .collect()
 }
 
-pub fn potential_empty_side_moves(board: &Board) -> Vec<(Cell, usize, usize)> {
+pub fn potential_empty_side_moves(board: &Board) -> Vec<(&Cell, usize, usize)> {
     board
         .get_side_cell_positions()
         .iter()
-        .filter_map(|(cell, row_index, col_index)| match cell {
-            Cell::Empty => Some((Cell::Empty, *row_index, *col_index)),
-            _ => None,
-        })
+        .filter(|(cell, _, _)| **cell == Cell::Empty)
+        .copied()
         .collect()
 }
 
-pub fn potential_empty_moves(board: &Board) -> Vec<(Cell, usize, usize)> {
+pub fn potential_empty_moves(board: &Board) -> Vec<(&Cell, usize, usize)> {
     board
         .get_cell_positions()
         .iter()
-        .filter_map(|(cell, row_index, col_index)| match cell {
-            Cell::Empty => Some((Cell::Empty, *row_index, *col_index)),
-            _ => None,
-        })
+        .filter(|(cell, _, _)| **cell == Cell::Empty)
+        .copied()
         .collect()
 }
 
-pub fn first_cell_position_in(cells: &[(Cell, usize, usize)]) -> Option<(Cell, usize, usize)> {
-    cells
-        .iter()
-        .next()
-        .map(|(cell, row_index, col_index)| (cell.clone(), *row_index, *col_index))
+pub fn first_cell_position_in<'a>(
+    cells: &[(&'a Cell, usize, usize)],
+) -> Option<(&'a Cell, usize, usize)> {
+    cells.iter().next().copied()
 }
 
-pub fn potential_win_setup_move(
-    board: &Board,
+pub fn potential_win_setup_move<'a>(
+    board: &'a Board,
     for_player: &Player,
-) -> Option<(Cell, usize, usize)> {
+) -> Option<(&'a Cell, usize, usize)> {
     first_cell_position_in(&potential_win_setup_moves(board, for_player))
 }
 
-pub fn potential_win_move(board: &Board, for_player: &Player) -> Option<(Cell, usize, usize)> {
+pub fn potential_win_move<'a>(
+    board: &'a Board,
+    for_player: &Player,
+) -> Option<(&'a Cell, usize, usize)> {
     first_cell_position_in(&potential_win_moves(board, for_player))
 }
 
-pub fn best_potential_fork_move(
-    board: &Board,
+pub fn best_potential_fork_move<'a>(
+    board: &'a Board,
     for_player: &Player,
-) -> Option<(Cell, usize, usize)> {
+) -> Option<(&'a Cell, usize, usize)> {
     first_cell_position_in(&potential_fork_moves(board, for_player))
 }
 
-pub fn potential_center_move(board: &Board) -> Option<(Cell, usize, usize)> {
-    match board.get_center_cell_position() {
-        (Cell::Empty, row_index, col_index) => Some((Cell::Empty, row_index, col_index)),
-        _ => None,
+pub fn potential_center_move(board: &Board) -> Option<(&Cell, usize, usize)> {
+    let center_cell_position = board.get_center_cell_position();
+    if *center_cell_position.0 == Cell::Empty {
+        Some(center_cell_position)
+    } else {
+        None
     }
 }
 
-pub fn potential_opposite_corner_move(
-    board: &Board,
+pub fn potential_opposite_corner_move<'a>(
+    board: &'a Board,
     for_player: &Player,
-) -> Option<(Cell, usize, usize)> {
+) -> Option<(&'a Cell, usize, usize)> {
     first_cell_position_in(&potential_opposite_corner_moves(board, for_player))
 }
 
-pub fn potential_empty_corner_move(board: &Board) -> Option<(Cell, usize, usize)> {
+pub fn potential_empty_corner_move(board: &Board) -> Option<(&Cell, usize, usize)> {
     first_cell_position_in(&potential_empty_corner_moves(board))
 }
 
-pub fn potential_empty_side_move(board: &Board) -> Option<(Cell, usize, usize)> {
+pub fn potential_empty_side_move(board: &Board) -> Option<(&Cell, usize, usize)> {
     first_cell_position_in(&potential_empty_side_moves(board))
 }
 
-pub fn potential_empty_move(board: &Board) -> Option<(Cell, usize, usize)> {
+pub fn potential_empty_move(board: &Board) -> Option<(&Cell, usize, usize)> {
     first_cell_position_in(&potential_empty_moves(board))
 }
 
-pub fn best_next_move(board: &Board, for_player: &Player) -> Option<(Cell, usize, usize)> {
+pub fn best_next_move<'a>(
+    board: &'a Board,
+    for_player: &Player,
+) -> Option<(&'a Cell, usize, usize)> {
     None.or_else(|| potential_win_move(board, for_player))
         .or_else(|| potential_win_move(board, &for_player.opponent()))
         .or_else(|| best_potential_fork_move(board, for_player))
